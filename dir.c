@@ -34,7 +34,7 @@ static struct dentry *osfs_lookup(struct inode *dir, struct dentry *dentry, unsi
 
         dir_entries = (struct osfs_dir_entry *)extent_start;
 
-        // 遍歷這個 extent 中的所有目錄項
+        //  extent 中的所有目錄項
         for (j = 0; j < extent_entry_count; j++) {
             if (strlen(dir_entries[j].filename) == dentry->d_name.len &&
                 strncmp(dir_entries[j].filename, dentry->d_name.name, dentry->d_name.len) == 0) {
@@ -136,7 +136,7 @@ struct inode *osfs_new_inode(const struct inode *dir, umode_t mode)
     struct inode *inode;
     struct osfs_inode *osfs_inode;
     int ino, ret;
-    uint32_t required_blocks = 1;  // 假設初始分配1個塊，根據需要調整
+    uint32_t required_blocks = 1;  // 假設初始分配1個data block
 
     /* Check if the mode is supported */
     if (!S_ISDIR(mode) && !S_ISREG(mode) && !S_ISLNK(mode)) {
@@ -233,13 +233,13 @@ static int osfs_add_dir_entry(struct inode *dir, uint32_t inode_no, const char *
         return -ENAMETOOLONG;
     }
 
-    // 確定目錄的數據塊位置
+    // 確定目錄的data block位置
     for (i = 0; i < parent_inode->extent_count; i++) {
         data_block = sb_info->data_blocks + parent_inode->extents[i].start_block * BLOCK_SIZE;
         dir_entries = (struct osfs_dir_entry *)data_block;
         dir_entry_count = parent_inode->extents[i].block_count * (BLOCK_SIZE / sizeof(struct osfs_dir_entry));
 
-        // 查找空閒目錄項
+        // 查找空閒目錄
         for (j = 0; j < dir_entry_count; j++) {
             if (dir_entries[j].inode_no == 0) {
                 dir_entries[j].inode_no = inode_no;
@@ -253,13 +253,13 @@ static int osfs_add_dir_entry(struct inode *dir, uint32_t inode_no, const char *
 
     // 如果沒有找到空閒目錄項，分配新的 extent
     pr_info("osfs_add_dir_entry: No free entry found, allocating new extent\n");
-    ret = osfs_alloc_extent(sb_info, 1, parent_inode);  // 假設需要分配 1 個塊
+    ret = osfs_alloc_extent(sb_info, 1, parent_inode); 
     if (ret) {
         pr_err("osfs_add_dir_entry: Failed to allocate new extent\n");
         return ret;
     }
 
-    // 遞歸調用以添加目錄項
+
     return osfs_add_dir_entry(dir, inode_no, name, name_len);
 }
 
